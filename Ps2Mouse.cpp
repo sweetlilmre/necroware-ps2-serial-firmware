@@ -1,3 +1,4 @@
+#include "ProMicro.h"
 #include "Ps2Mouse.h"
 
 namespace {
@@ -64,29 +65,29 @@ struct Ps2Mouse::Impl {
   const Ps2Mouse& m_ref;
 
   void sendBit(int value) const {
-    while (digitalRead(m_ref.m_clockPin) != LOW) {}
-    digitalWrite(m_ref.m_dataPin, value);
-    while (digitalRead(m_ref.m_clockPin) != HIGH) {}
+    while (PS2_READCLOCK != LOW) {}
+    PS2_SETDATA(value);
+    while (PS2_READCLOCK != HIGH) {}
   }
 
   int recvBit() const {
-    while (digitalRead(m_ref.m_clockPin) != LOW) {}
-    auto result = digitalRead(m_ref.m_dataPin);
-    while (digitalRead(m_ref.m_clockPin) != HIGH) {}
+    while (PS2_READCLOCK != LOW) {}
+    auto result = PS2_READDATA;
+    while (PS2_READCLOCK != HIGH) {}
     return result;
   }
 
   bool sendByte(byte value) const {
 
     // Inhibit communication
-    pinMode(m_ref.m_clockPin, OUTPUT);
-    digitalWrite(m_ref.m_clockPin, LOW);
+    PS2_DIRCLOCKOUT;
+    PS2_SETCLOCKLOW;
     delayMicroseconds(10);
 
     // Set start bit and release the clock
-    pinMode(m_ref.m_dataPin, OUTPUT);
-    digitalWrite(m_ref.m_dataPin, LOW);
-    pinMode(m_ref.m_clockPin, INPUT_PULLUP);
+    PS2_DIRDATAOUT;
+    PS2_SETDATALOW;
+    PS2_DIRCLOCKIN_UP;
 
     // Send data bits
     byte parity = 1;
@@ -103,15 +104,15 @@ struct Ps2Mouse::Impl {
     sendBit(1);
 
     // Enter receive mode and wait for ACK bit
-    pinMode(m_ref.m_dataPin, INPUT);
+    PS2_DIRDATAIN;
     return recvBit() == 0;
   }
 
   bool recvByte(byte& value) const {
 
     // Enter receive mode
-    pinMode(m_ref.m_clockPin, INPUT);
-    pinMode(m_ref.m_dataPin, INPUT);
+    PS2_DIRCLOCKIN;
+    PS2_DIRDATAIN;
 
     // Receive start bit
     if (recvBit() != 0) {
@@ -186,11 +187,11 @@ struct Ps2Mouse::Impl {
   }
 };
 
-Ps2Mouse::Ps2Mouse(int clockPin, int dataPin)
-  : m_clockPin(clockPin), m_dataPin(dataPin), m_stream(false)
+Ps2Mouse::Ps2Mouse()
+  : m_stream(false)
 {}
 
-bool Ps2Mouse::reset() const {
+bool Ps2Mouse::reset(bool streaming) {
   Impl impl{*this};
   if (!impl.sendCommand(Command::reset)) {
       return false;
@@ -205,15 +206,27 @@ bool Ps2Mouse::reset() const {
       return false;
   }
 
+  if (streaming) {
+    return enableStreaming() && impl.sendCommand(Command::enableDataReporting);
+  }
+
   return disableStreaming() && impl.sendCommand(Command::enableDataReporting);
 }
 
-bool Ps2Mouse::enableStreaming() const {
-  return Impl{*this}.sendCommand(Command::setStreamMode);
+bool Ps2Mouse::enableStreaming() {
+  if( Impl{*this}.sendCommand(Command::setStreamMode) ) {
+    m_stream = true;
+    return true;
+  }
+  return false;
 }
 
-bool Ps2Mouse::disableStreaming() const {
-  return Impl{*this}.sendCommand(Command::setRemoteMode);
+bool Ps2Mouse::disableStreaming() {
+  if(Impl{*this}.sendCommand(Command::setRemoteMode)) {
+    m_stream = false;
+    return true;
+  }
+  return false;
 }
 
 bool Ps2Mouse::setScaling(bool flag) const {
@@ -244,7 +257,7 @@ bool Ps2Mouse::readData(Data& data) const {
   Impl impl{*this};
 
   if (m_stream) {
-     if (digitalRead(m_clockPin) != LOW) {
+     if (PS2_READCLOCK != LOW) {
        return false;
      }
   }

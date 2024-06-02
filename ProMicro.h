@@ -23,20 +23,26 @@
  * more quickly set individual pins to their desired
  * states.
  *PS/2 data pin operations***Bit:76543210************/
-#define PS2_SETDATAHIGH   (PORTC |=0b00001000)      //0x08
-#define PS2_SETDATALOW    (PORTC &=0b11110111)      //0xF7
-#define PS2_SETDATAIN     (DDRC  &=0b11110111)      //0xF7
-#define PS2_SETDATAIN_UP  (DDRC  &=0b11110111); PS2_SETDATAHIGH
-#define PS2_SETDATAOUT    (DDRC  |=0b00001000)      //0x08
-#define PS2_READDATA      ((PINC &=0b00001000)>>3)  //0x08
+#define PS2_SETDATAHIGH   (PORTC |=0b00001000)
+#define PS2_SETDATALOW    (PORTC &=0b11110111)
+#define PS2_SETDATA(val)  val ? PS2_SETDATAHIGH : PS2_SETDATALOW
+#define PS2_DIRDATAIN     (DDRC  &=0b11110111)
+#define PS2_DIRDATAIN_UP  (DDRC  &=0b11110111); PS2_SETDATAHIGH
+#define PS2_DIRDATAOUT    (DDRC  |=0b00001000)
+#define PS2_READDATA      ((PINC &=0b00001000)>>3)
+
 /*PS/2 clock pin operations**Bit:76543210************/
-#define PS2_SETCLOCKHIGH  (PORTD |=0b00000100)      //0x04
-#define PS2_SETCLOCKLOW   (PORTD &=0b11111011)      //0xFB
-#define PS2_SETCLOCKIN    (DDRD  &=0b11111011)      //0xFB
-#define PS2_SETCLOCKOUT   (DDRD  |=0b00000100)      //0x04
-#define PS2_READCLOCK     ((PIND &=0b00000100)>>2)  //0x04
+#define PS2_SETCLOCKHIGH  (PORTD |=0b00000100)
+#define PS2_SETCLOCKLOW   (PORTD &=0b11111011)
+#define PS2_SETCLOCK(val) val ? PS2_SETCLOCKHIGH : PS2_SETCLOCKLOW
+#define PS2_DIRCLOCKIN    (DDRD  &=0b11111011)
+#define PS2_DIRCLOCKIN_UP (DDRD  &=0b11111011); PS2_SETCLOCKHIGH
+#define PS2_DIRCLOCKOUT   (DDRD  |=0b00000100)
+#define PS2_READCLOCK     ((PIND &=0b00000100)>>2)
+
 /*RS-232 pin operations******Bit:76543210************/  
-#define RS_SETTXHIGH      (PORTD |=0b00010000)      //0x10
-#define RS_SETTXLOW       (PORTD &=0b11101111)      //0xEF
-#define RS_SETTXOUT       (DDRD  |=0b00010000)      //0x10
+#define RS_SETTXHIGH      (PORTD |=0b00010000)
+#define RS_SETTXLOW       (PORTD &=0b11101111)
+#define RS_SETTX(val)     val ? RS_SETTXHIGH : RS_SETTXLOW
+#define RS_DIRTXOUT       (DDRD  |=0b00010000)
 /****************************************************/
