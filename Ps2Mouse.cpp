@@ -207,7 +207,10 @@ bool Ps2Mouse::reset(bool streaming) {
   }
 
   if (streaming) {
-    return enableStreaming() && impl.sendCommand(Command::enableDataReporting);
+    // Streaming mode is the default after a reset.
+    m_stream = true;
+    // switch on data reporting
+    return impl.sendCommand(Command::enableDataReporting);
   }
 
   return disableStreaming() && impl.sendCommand(Command::enableDataReporting);
