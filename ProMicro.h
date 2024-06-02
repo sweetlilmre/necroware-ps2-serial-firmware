@@ -3,11 +3,11 @@
  * Created by Jason Hill
  * 2023/06/18
  * 
- *     DEBUG =  0 or undefined - No Seiral debug, No information provided
- * 0 < DEBUG <= 1 - Some information
- *     DEBUG >  1 - Verbose - all information including PS/2 mouse reporting
+ * Updated by Peter Edwards
+ * 2024/01/02
+ * 
  */
-#define DEBUG 0
+
 /****************************************************
  * The following defines assume default pinout
  * of Arduino ProMicro or similiar:
