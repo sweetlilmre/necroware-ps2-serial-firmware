@@ -72,8 +72,17 @@ static void initPs2Port() {
     Serial.println("Enabling streaming mode");
   }
   
-  mouse.reset(streaming);
-  mouse.setSampleRate(20);
+  if (mouse.reset(streaming)) {
+    Serial.println("PS/2 mouse reset OK");
+  } else {
+    Serial.println("Failed to reset PS/2 mouse");
+  }
+
+  if (mouse.setSampleRate(20)) {
+    Serial.println("Sample rate set to 20");
+  } else {
+    Serial.println("Failed to set sample rate");
+  }
 
   Ps2Mouse::Settings settings;
   if (mouse.getSettings(settings)) {
@@ -83,6 +92,8 @@ static void initPs2Port() {
     Serial.println(settings.resolution);
     Serial.print("samplingRate = ");
     Serial.println(settings.sampleRate);
+  } else {
+    Serial.println("Failed to get settings");
   }
 }
 

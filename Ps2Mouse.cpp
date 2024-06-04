@@ -233,20 +233,48 @@ bool Ps2Mouse::disableStreaming() {
 }
 
 bool Ps2Mouse::setScaling(bool flag) const {
-  return Impl{*this}.sendCommand(flag ? Command::enableScaling : Command::disableScaling);
+  if (m_stream) {
+    Impl{*this}.sendCommand(Command::disableDataReporting);
+  }
+  bool res =  Impl{*this}.sendCommand(flag ? Command::enableScaling : Command::disableScaling);
+  if (m_stream) {
+    Impl{*this}.sendCommand(Command::enableDataReporting);
+  }
+  return res;
 }
 
 bool Ps2Mouse::setResolution(byte resolution) const {
-  return Impl{*this}.sendCommand(Command::setResolution, resolution);
+  if (m_stream) {
+    Impl{*this}.sendCommand(Command::disableDataReporting);
+  }
+  bool res = Impl{*this}.sendCommand(Command::setResolution, resolution);
+  if (m_stream) {
+    Impl{*this}.sendCommand(Command::enableDataReporting);
+  }
+  return res;
 }
 
 bool Ps2Mouse::setSampleRate(byte sampleRate) const {
-  return Impl{*this}.sendCommand(Command::setSampleRate, sampleRate);
+  if (m_stream) {
+    Impl{*this}.sendCommand(Command::disableDataReporting);
+  }
+  bool res = Impl{*this}.sendCommand(Command::setSampleRate, sampleRate);
+  if (m_stream) {
+    Impl{*this}.sendCommand(Command::enableDataReporting);
+  }
+  return res;
 }
 
 bool Ps2Mouse::getSettings(Settings& settings) const {
   Status status;
-  if (Impl{*this}.getStatus(status)) {
+  if (m_stream) {
+    Impl{*this}.sendCommand(Command::disableDataReporting);
+  }
+  bool res = Impl{*this}.getStatus(status);
+  if (m_stream) {
+    Impl{*this}.sendCommand(Command::enableDataReporting);
+  }
+  if (res) {
     settings.scaling = status.scaling;
     settings.resolution = status.resolution;
     settings.sampleRate = status.sampleRate;
