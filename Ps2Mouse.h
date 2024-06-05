@@ -14,7 +14,12 @@ public:
   };
 
   struct Settings {
+    bool rightBtn;
+    bool middleBtn;
+    bool leftBtn;
     bool scaling;
+    bool enable;
+    bool remoteMode;
     byte resolution;
     byte sampleRate;
   };
@@ -37,4 +42,5 @@ private:
   struct Impl;
 
   bool m_stream;
+  bool isWheelMouse;
 };

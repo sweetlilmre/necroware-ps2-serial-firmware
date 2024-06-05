@@ -1,4 +1,4 @@
-#include "ProMicro.h"
+#include "ProMini.h"
 #include "Ps2Mouse.h"
 
 namespace {
@@ -33,6 +33,11 @@ struct Packet {
   byte yMovement;
 };
 
+struct WheelPacket {
+  Packet packet;
+  byte wheelData;
+};
+
 enum class Command {
   disableScaling        = 0xE6,
   enableScaling         = 0xE7,
@@ -53,6 +58,7 @@ enum class Command {
 
 enum class Response {
   isMouse        = 0x00,
+  isWheelMouse   = 0x03,
   selfTestPassed = 0xAA,
   ack            = 0xFA,
   error          = 0xFC,
@@ -188,7 +194,7 @@ struct Ps2Mouse::Impl {
 };
 
 Ps2Mouse::Ps2Mouse()
-  : m_stream(false)
+  : m_stream(false), isWheelMouse(false)
 {}
 
 bool Ps2Mouse::reset(bool streaming) {
@@ -205,6 +211,17 @@ bool Ps2Mouse::reset(bool streaming) {
   if (!impl.recvByte(reply) || reply != byte(Response::isMouse)) {
       return false;
   }
+
+  // Determine if this is a wheel mouse
+  if (!impl.sendCommand(Command::setSampleRate, 200) ||
+      !impl.sendCommand(Command::setSampleRate, 100) ||
+      !impl.sendCommand(Command::setSampleRate, 80) ||
+      !impl.sendCommand(Command::getDeviceId) ||
+      !impl.recvByte(reply)) {
+      return false;
+  }
+
+  isWheelMouse = (reply == byte(Response::isWheelMouse));
 
   if (streaming) {
     // Streaming mode is the default after a reset.
@@ -275,6 +292,11 @@ bool Ps2Mouse::getSettings(Settings& settings) const {
     Impl{*this}.sendCommand(Command::enableDataReporting);
   }
   if (res) {
+    settings.rightBtn = status.rightButton;
+    settings.middleBtn = status.middleButton;
+    settings.leftBtn = status.leftButton;
+    settings.remoteMode = status.remoteMode;
+    settings.enable = status.dataReporting;
     settings.scaling = status.scaling;
     settings.resolution = status.resolution;
     settings.sampleRate = status.sampleRate;
@@ -296,15 +318,22 @@ bool Ps2Mouse::readData(Data& data) const {
     return false;
   }
 
-  Packet packet;
-  if (!impl.recvData(packet)) {
-    return false;
+  WheelPacket wheelPacket = {0};
+  Packet* packet = &wheelPacket.packet;
+  if (isWheelMouse) {
+    if (!impl.recvData(wheelPacket)) {
+      return false;
+    }
+  } else {
+    if (!impl.recvData(wheelPacket.packet)) {
+      return false;
+    }
   }
 
-  data.leftButton = packet.leftButton;
-  data.middleButton = packet.middleButton;
-  data.rightButton = packet.rightButton;
-  data.xMovement = (packet.xSign ? -0x100 : 0) | packet.xMovement;
-  data.yMovement = (packet.ySign ? -0x100 : 0) | packet.yMovement;
+  data.leftButton = packet->leftButton;
+  data.middleButton = packet->middleButton;
+  data.rightButton = packet->rightButton;
+  data.xMovement = (packet->xSign ? -0x100 : 0) | packet->xMovement;
+  data.yMovement = (packet->ySign ? -0x100 : 0) | packet->yMovement;
   return true;
 }

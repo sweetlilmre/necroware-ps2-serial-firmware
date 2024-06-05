@@ -1,10 +1,7 @@
-#include "ProMicro.h"
+#include "ProMini.h"
 #include "Ps2Mouse.h"
 
 static const int RS232_RTS = 3;
-static const int JP12 = 11;
-static const int JP34 = 12;
-static const int LED = 13;
 
 static Ps2Mouse mouse;
 static bool threeButtons = false;
@@ -56,7 +53,7 @@ static void initSerialPort() {
   sendSerialByte('M');
   if(threeButtons) {
     sendSerialByte('3');
-    Serial.println("Init 3-buttons mode");
+    Serial.println("Init 3-button mode");
   }
   delayMicroseconds(10000);
 
@@ -67,7 +64,7 @@ static void initSerialPort() {
 
 static void initPs2Port() {
   Serial.println("Reseting PS/2 mouse");
-  bool streaming = (digitalRead(JP34) == LOW);
+  bool streaming = (JP34_READ == LOW);
   if (streaming) {
     Serial.println("Enabling streaming mode");
   }
@@ -102,22 +99,41 @@ void setup() {
   // or the mouse will not initialize
   PS2_DIRDATAIN_UP;
   RS_DIRTXOUT;
-  pinMode(JP12, INPUT_PULLUP);
-  pinMode(JP34, INPUT_PULLUP);
-  pinMode(LED, OUTPUT);
-  digitalWrite(LED, HIGH);
-  threeButtons = digitalRead(JP12);
+  JP12_DIRIN_UP;
+  JP34_DIRIN_UP;
+  LED_DIROUT;
+  LED_SET(HIGH);
+  threeButtons = JP12_READ;
   Serial.begin(115200);
-  initSerialPort();
   initPs2Port();
+  initSerialPort();
   Serial.println("Setup done!");
-  digitalWrite(LED, LOW);
-
+  LED_SETLOW;
 }
+
+/*
+void showActivity(bool update) {
+  static int ledState = LOW;
+  static unsigned long lastTime = 0;
+  if ((ledState == LOW) && update) {
+    ledState = HIGH;
+    LED_SETHIGH;
+    lastTime = millis();
+  } else {
+    if (millis() - lastTime < 50) {
+      return;
+    }
+    ledState = LOW;
+    LED_SETLOW;
+  }
+}
+*/
 
 void loop() {
   Ps2Mouse::Data data;
   if (mouse.readData(data)) {
     sendToSerial(data);
+    //showActivity(true);
   }
+  //showActivity(false);
 }
