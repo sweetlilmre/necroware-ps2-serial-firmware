@@ -5,6 +5,7 @@ static const int RS232_RTS = 3;
 
 static Ps2Mouse mouse;
 static bool threeButtons = false;
+static bool wheelMouse = false;
 
 static void sendSerialBit(int data) {
   // Delay between the signals to match 1200 baud
@@ -41,7 +42,13 @@ static void sendToSerial(const Ps2Mouse::Data& data) {
   sendSerialByte(dx & 0x3F);
   sendSerialByte(dy & 0x3F);
   if (threeButtons) {
-    byte mb = data.middleButton ? 0x20 : 0;
+    byte mb;
+    if (wheelMouse) {
+      mb = data.middleButton ? 0x10 : 0;
+      mb |= (data.wheelMovement & 0x0F);
+    } else {
+      mb = data.middleButton ? 0x20 : 0;
+    }
     sendSerialByte(mb);
   }
 }
@@ -52,8 +59,12 @@ static void initSerialPort() {
   delayMicroseconds(10000);
   sendSerialByte('M');
   if(threeButtons) {
-    sendSerialByte('3');
-    Serial.println("Init 3-button mode");
+    if(wheelMouse) {
+      sendSerialByte('Z');
+    } else {
+      sendSerialByte('3');
+    }
+    Serial.println(wheelMouse ? "Init Wheel mode" : "Init 3-button mode");
   }
   delayMicroseconds(10000);
 
@@ -74,6 +85,8 @@ static void initPs2Port() {
   } else {
     Serial.println("Failed to reset PS/2 mouse");
   }
+
+  wheelMouse = mouse.isWheelMouse();
 
   if (mouse.setSampleRate(20)) {
     Serial.println("Sample rate set to 20");

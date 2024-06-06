@@ -31,10 +31,6 @@ struct Packet {
 
   byte xMovement;
   byte yMovement;
-};
-
-struct WheelPacket {
-  Packet packet;
   byte wheelData;
 };
 
@@ -154,11 +150,9 @@ struct Ps2Mouse::Impl {
     return true;
   }
 
-  template <typename T>
-  bool recvData(T& data) const {
-    auto ptr = reinterpret_cast<byte*>(&data);
-    for (auto i = 0u; i < sizeof(data); i++) {
-      if (!recvByte(ptr[i])) {
+  bool recvData(byte* data, size_t size) const {
+    for (size_t i = 0u; i < size; i++) {
+      if (!recvByte(data[i])) {
         return false;
       }
     }
@@ -189,12 +183,12 @@ struct Ps2Mouse::Impl {
   }
 
   bool getStatus(Status& status) const {
-    return sendCommand(Command::statusRequest) && recvData(status);
+    return sendCommand(Command::statusRequest) && recvData((byte*) &status, sizeof(Status));
   }
 };
 
 Ps2Mouse::Ps2Mouse()
-  : m_stream(false), isWheelMouse(false)
+  : m_stream(false), m_wheelMouse(false)
 {}
 
 bool Ps2Mouse::reset(bool streaming) {
@@ -221,7 +215,7 @@ bool Ps2Mouse::reset(bool streaming) {
       return false;
   }
 
-  isWheelMouse = (reply == byte(Response::isWheelMouse));
+  m_wheelMouse = (reply == byte(Response::isWheelMouse));
 
   if (streaming) {
     // Streaming mode is the default after a reset.
@@ -231,6 +225,10 @@ bool Ps2Mouse::reset(bool streaming) {
   }
 
   return disableStreaming() && impl.sendCommand(Command::enableDataReporting);
+}
+
+bool Ps2Mouse::isWheelMouse() const {
+  return m_wheelMouse;
 }
 
 bool Ps2Mouse::enableStreaming() {
@@ -318,22 +316,22 @@ bool Ps2Mouse::readData(Data& data) const {
     return false;
   }
 
-  WheelPacket wheelPacket = {0};
-  Packet* packet = &wheelPacket.packet;
-  if (isWheelMouse) {
-    if (!impl.recvData(wheelPacket)) {
+  Packet packet = {0};
+  if (m_wheelMouse) {
+    if (!impl.recvData((byte*)&packet, sizeof(packet))) {
       return false;
     }
   } else {
-    if (!impl.recvData(wheelPacket.packet)) {
+    if (!impl.recvData((byte*)&packet, sizeof(packet) - 1)) {
       return false;
     }
   }
 
-  data.leftButton = packet->leftButton;
-  data.middleButton = packet->middleButton;
-  data.rightButton = packet->rightButton;
-  data.xMovement = (packet->xSign ? -0x100 : 0) | packet->xMovement;
-  data.yMovement = (packet->ySign ? -0x100 : 0) | packet->yMovement;
+  data.leftButton = packet.leftButton;
+  data.middleButton = packet.middleButton;
+  data.rightButton = packet.rightButton;
+  data.xMovement = (packet.xSign ? -0x100 : 0) | packet.xMovement;
+  data.yMovement = (packet.ySign ? -0x100 : 0) | packet.yMovement;
+  data.wheelMovement = m_wheelMouse ? packet.wheelData : 0;
   return true;
 }

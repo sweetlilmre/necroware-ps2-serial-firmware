@@ -11,6 +11,7 @@ public:
     bool rightButton;
     int  xMovement;
     int  yMovement;
+    int wheelMovement;
   };
 
   struct Settings {
@@ -23,10 +24,12 @@ public:
     byte resolution;
     byte sampleRate;
   };
-  
+
   Ps2Mouse();
 
   bool reset(bool streaming);
+  // only valid after reset, otherwise will always return false irrespective of mouse type
+  bool isWheelMouse() const;
 
   bool setScaling(bool flag) const;
   bool setResolution(byte resolution) const;
@@ -42,5 +45,5 @@ private:
   struct Impl;
 
   bool m_stream;
-  bool isWheelMouse;
+  bool m_wheelMouse;
 };
