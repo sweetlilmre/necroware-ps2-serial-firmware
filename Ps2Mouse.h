@@ -11,7 +11,7 @@ public:
     bool rightButton;
     int  xMovement;
     int  yMovement;
-    int wheelMovement;
+    int  wheelMovement;
   };
 
   struct Settings {
@@ -27,9 +27,8 @@ public:
 
   Ps2Mouse();
 
+  // reset the mouse. If streaming is true, the mouse will be put into streaming mode, otherwise remote mode.
   bool reset(bool streaming);
-  // only valid after reset, otherwise will always return false irrespective of mouse type
-  bool isWheelMouse() const;
 
   bool setScaling(bool flag) const;
   bool setResolution(byte resolution) const;

@@ -227,10 +227,6 @@ bool Ps2Mouse::reset(bool streaming) {
   return disableStreaming() && impl.sendCommand(Command::enableDataReporting);
 }
 
-bool Ps2Mouse::isWheelMouse() const {
-  return m_wheelMouse;
-}
-
 bool Ps2Mouse::enableStreaming() {
   if( Impl{*this}.sendCommand(Command::setStreamMode) ) {
     m_stream = true;

@@ -75,18 +75,12 @@ static void initSerialPort() {
 
 static void initPs2Port() {
   Serial.println("Reseting PS/2 mouse");
-  bool streaming = (JP34_READ == LOW);
-  if (streaming) {
-    Serial.println("Enabling streaming mode");
-  }
   
-  if (mouse.reset(streaming)) {
+  if (mouse.reset(true)) {
     Serial.println("PS/2 mouse reset OK");
   } else {
     Serial.println("Failed to reset PS/2 mouse");
   }
-
-  wheelMouse = mouse.isWheelMouse();
 
   if (mouse.setSampleRate(20)) {
     Serial.println("Sample rate set to 20");
@@ -117,9 +111,10 @@ void setup() {
   LED_DIROUT;
   LED_SET(HIGH);
   threeButtons = JP12_READ;
+  wheelMouse = (JP34_READ == LOW);
   Serial.begin(115200);
-  initPs2Port();
   initSerialPort();
+  initPs2Port();
   Serial.println("Setup done!");
   LED_SETLOW;
 }
